@@ -9,7 +9,7 @@ app.config["DEBUG"] = True
 
 @app.route('/', methods=['GET'])
 def home():
-    json_data = { "message": "Hello World!", "version": 1 }
+    json_data = { "message": "Success", "version": 1 }
     return jsonify(json_data)
 
 @app.route(f'/api/v1', methods=['GET'])
