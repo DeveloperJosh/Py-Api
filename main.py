@@ -36,7 +36,6 @@ def api_v1_port():
     id = random.randint(1,3)
     find_image = [nsfw_image[id-1]]
     for i in find_image:
-        print(i['url'])
         json_data = { "message": i['url'] }
         return jsonify(json_data)
 
