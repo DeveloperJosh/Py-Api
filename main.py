@@ -1,21 +1,11 @@
 from gettext import find
 import flask
 from flask import request, jsonify
-import json
+from data.nsfw import nsfw_image
 import random
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-
-nsfw_image = [{'id': 1,
-    'url': 'https://himg.nl/images/sex/228f79894afc73a218416e20ae74fd17/original.gif',
-    },
-    {'id': 2,
-    'url': 'https://myteenwebcam.com/fapp/gifs/007afbdbfc1da0ea5cb00b19eff93306.gif',
-     },
-    {'id': 3,
-    'url': 'https://cdn.porngifs.com/img/16894',
-    }]
 
 @app.route('/', methods=['GET'])
 def home():
@@ -27,7 +17,7 @@ def home():
 @app.route('/api/v1', methods=['GET'])
 def api_v1():
     ### json response
-    json_data = { "message": "Api Is not open" }
+    json_data = { "message": "Success" }
     
     return jsonify(json_data)
 
@@ -36,7 +26,7 @@ def api_v1_port():
     id = random.randint(1,3)
     find_image = [nsfw_image[id-1]]
     for i in find_image:
-        json_data = { "message": i['url'] }
+        json_data = { "message": "Success", "url": i['url'] }
         return jsonify(json_data)
 
 
