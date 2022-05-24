@@ -1,6 +1,5 @@
 import flask
 from flask import request, jsonify
-from requests import head
 from data.nsfw import nsfw_image
 import random
 import json
