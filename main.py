@@ -1,4 +1,3 @@
-from msilib.schema import Error
 import flask
 from flask import request, jsonify
 from data.nsfw import nsfw_image
