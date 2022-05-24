@@ -8,8 +8,8 @@ import string
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-with open('data/config.json', 'r') as f:
-    config = json.load(f)
+with open('data/config.json', 'r') as json_file:
+    config = json.load(json_file)
     token = config['token']
 
 @app.route('/api/v1/getkey', methods=['GET'])
@@ -18,11 +18,12 @@ def get_token():
 
 @app.route('/', methods=['GET'])
 def home():
-    header = request.headers.get('Authorization')
-    if header == token:
-        return jsonify({'message': "Authorized"})
+    headers = request.headers
+    auth = headers.get('Authorization')
+    if auth == token:
+        return jsonify({'message': 'Welcome to the NSFW API'})
     else:
-        return jsonify({"message": "ERROR: Unauthorized", "Error": "Go to /api/v1/getkey for more info"}), 401
+        return jsonify({'message': 'You need to join the server for the key'})
 
 
 @app.route(f'/api/v1/', methods=['GET'])
