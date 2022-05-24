@@ -1,3 +1,4 @@
+from msilib.schema import Error
 import flask
 from flask import request, jsonify
 from data.nsfw import nsfw_image
@@ -7,25 +8,14 @@ import string
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-app.config['SECRET_KEY']='9nwof9uwfqoko99'
-
-@app.route('/api/v1/getkey', methods=['GET'])
-def get_token():
-    with open('data/config.json', 'w') as f:
-        token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-        ip_addr = request.remote_addr
-        f.write(json.dumps({'ip_addr': ip_addr, 'token': token}))
-        f.close()
-    return jsonify({'token': token})
 
 with open('data/config.json', 'r') as f:
     config = json.load(f)
     token = config['token']
 
-@app.route('/client')
-def client():
-    ip_addr = request.environ['REMOTE_ADDR']
-    return '<h1> Your IP address is:' + ip_addr
+@app.route('/api/v1/getkey', methods=['GET'])
+def get_token():
+    return jsonify({'message': 'You need to join the server for the key'})
 
 @app.route('/', methods=['GET'])
 def home():
@@ -33,7 +23,7 @@ def home():
     if header == token:
         return jsonify({'message': "Authorized"})
     else:
-        return jsonify({'message': "Unauthorized"})
+        return jsonify({"message": "ERROR: Unauthorized", "Error": "Go to /api/v1/getkey for more info"}), 401
 
 
 @app.route(f'/api/v1/', methods=['GET'])
