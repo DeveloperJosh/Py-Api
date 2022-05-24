@@ -18,6 +18,10 @@ def get_token():
         f.close()
     return jsonify({'token': token})
 
+with open('data/config.json', 'r') as f:
+    config = json.load(f)
+    token = config['token']
+
 @app.route('/client')
 def client():
     ip_addr = request.environ['REMOTE_ADDR']
