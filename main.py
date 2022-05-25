@@ -1,4 +1,5 @@
 import email
+import json
 import flask
 from flask import request, jsonify, render_template
 from data.nsfw import nsfw_image
@@ -83,6 +84,8 @@ def dev_clear():
     headers = request.headers
     auth = headers.get("Authorization")
     if auth == os.environ.get("DEV_AUTH"):
+        cur.execute("DELETE FROM *")
+        conn.commit()
         return jsonify({"message": "Success"})
     else:
         return jsonify({"message": "Invalid Authorization"})
@@ -115,7 +118,7 @@ def login():
 def register():
     if request.method == 'POST':
         ### get from request
-        register = request.form
+        register = request.get_json()
         email = register['email']
         password = register['password']
         ### check if user exists
