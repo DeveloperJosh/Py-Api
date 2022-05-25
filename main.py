@@ -1,42 +1,27 @@
-from concurrent.futures import process
-from tabnanny import check
+import email
 import flask
-from flask import request, jsonify
+from flask import request, jsonify, render_template
 from data.nsfw import nsfw_image
 import random
-import json
 import os
+import psycopg2
+from dotenv import load_dotenv
+load_dotenv()
+conn = psycopg2.connect(database="deajle0ma70428", user="dtzrcdnhamsuvr", password=os.environ.get("DATA_PASS"), host=os.getenv("DATA_HOST"), port="5432")
+cur = conn.cursor()
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, template_folder='html')
 app.config["DEBUG"] = True
 app.config["JSON_SORT_KEYS"] = True
-
 image = []
 
-def get_random_image():
-    ###check for new images
-    try:
-        with open('data/images.json', 'r') as f:
-            image = json.load(f)
-    except:
-        return jsonify({"error": "No images found"})
-    while True:
-        random_index = random.randint(0, len(image)-1)
-        print("Random index:", random_index)
-        if len(image) == 0:
-            return jsonify({"error": "No images found."})
-        else:
-            return image[random_index]
+def on_start():
+    cur.execute("CREATE TABLE IF NOT EXISTS images (id serial PRIMARY KEY, image_url text, image_name text, image_nsfw boolean, image_tags text)")
+    ### users table
+    cur.execute("CREATE TABLE IF NOT EXISTS users (id serial PRIMARY KEY, password text, email text)")
+    conn.commit()
 
-def auto_dump():
-    with open('data/images.json', 'w') as f:
-        json.dump(image, f)
-    print("Dumping...")
-
-def auto_clear():
-    with open('data/images.json', 'w') as f:
-        json.dump([], f)
-    print("Clearing...")
+on_start()
 
 @app.route('/', methods=['GET'])
 def home():
@@ -77,7 +62,8 @@ def api_v1_nsfw_random():
 
 @app.route(f'/api/v1/image/', methods=['GET'])
 def api_v1_image():
-    return jsonify(get_random_image())
+    cur.execute("SELECT * FROM images")
+    return jsonify(cur.fetchall())
 
 @app.route(f'/api/v1/image/upload', methods=['POST', 'GET'])
 def api_v1_image_post():
@@ -85,9 +71,8 @@ def api_v1_image_post():
         request_data = request.get_json()
         image_url = request_data['url']
         number_generator = ''.join(random.choice('76378264862347632874632746') for i in range(4))
-        image_data = {'id': number_generator, 'url': image_url}
-        image.append(image_data)
-        auto_dump()
+        cur.execute("INSERT INTO images (image_url, image_name, image_nsfw, image_tags) VALUES (%s, %s, %s, %s)", (image_url, number_generator, False, ""))
+        conn.commit()
         return jsonify({"message": "Success"})
     elif request.method == 'GET':
         return jsonify({"message": "Please use POST"})
@@ -97,7 +82,47 @@ def dev_clear():
     headers = request.headers
     auth = headers.get("Authorization")
     if auth == os.environ.get("DEV_AUTH"):
-        auto_clear()
         return jsonify({"message": "Success"})
     else:
         return jsonify({"message": "Invalid Authorization"})
+
+@app.route(f'/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        ### get from request
+        login = request.form
+        email = login['email']
+        password = login['password']
+        if email == "":
+            return jsonify({"message": "Please enter email"})
+        elif password == "":
+            return jsonify({"message": "Please enter password"})
+        else:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+            if user is None:
+                return jsonify({"message": "User not found"})
+            else:
+                if password == user[1]:
+                    return jsonify({"message": "Success"})
+                else:
+                    return jsonify({"message": "Invalid Password"})
+    if request.method == 'GET':
+        return render_template('index.html')
+
+@app.route(f'/register', methods=['POST'])
+def register():
+    if request.method == 'POST':
+        ### get from request
+        register = request.form
+        email = register['email']
+        password = register['password']
+        ### check if user exists
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if user is None:
+            cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, password))
+            conn.commit()
+            return jsonify({"message": "Success"})
+        else:
+            return jsonify({"message": "User already exists"})
