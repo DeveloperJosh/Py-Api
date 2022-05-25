@@ -7,7 +7,8 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
-conn = psycopg2.connect(database="deajle0ma70428", user="dtzrcdnhamsuvr", password=os.environ.get("DATA_PASS"), host=os.getenv("DATA_HOST"), port="5432")
+url = os.getenv("DATABASE_URL")
+conn = psycopg2.connect(url)
 cur = conn.cursor()
 
 app = flask.Flask(__name__, template_folder='html')
