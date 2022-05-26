@@ -1,5 +1,3 @@
-import email
-import json
 import flask
 from flask import request, jsonify, render_template
 from data.nsfw import nsfw_image
@@ -29,12 +27,12 @@ on_start()
 def home():
       return jsonify({'message': 'Welcome to Blue\'s API'})
 
-@app.route(f'/api/v1/', methods=['GET'])
+@app.route(f'/api/v1', methods=['GET'])
 def api_v1():
     json_data = { "message": "No Endpoins Used" }
     return jsonify(json_data)
 
-@app.route(f'/api/v1/nsfw/', methods=['GET'])
+@app.route(f'/api/v1/nsfw', methods=['GET'])
 def api_v1_nsfw():
     json_data = { "Endpoints": ["/api/v1/nsfw/<id>", "/api/v1/nsfw/random"], "message": "Success" }
     return jsonify(json_data)
@@ -130,3 +128,30 @@ def register():
             return jsonify({"message": "Success"})
         else:
             return jsonify({"message": "User already exists"})
+
+@app.route(f'/accounts', methods=['DELETE', 'GET'])
+def account():
+    if request.method == 'DELETE':
+        headers = request.headers
+        auth = headers.get("Authorization")
+        if auth == os.environ.get("DEV_AUTH"):
+            cur.execute("DELETE FROM users")
+            conn.commit()
+            return jsonify({"message": "Success"})
+        else:
+            return jsonify({"message": "Invalid Authorization"})
+    elif request.method == 'GET':
+        return jsonify({"message": "Please Wait for api to be down"})
+
+@app.route(f'/delete/user', methods=['DELETE'])
+def delete_users():
+    if request.method == 'DELETE':
+        email = request.args.get("email")
+        headers = request.headers
+        auth = headers.get("Authorization")
+        if auth == os.environ.get("DEV_AUTH"):
+            cur.execute("DELETE FROM users WHERE email = %s", (email,))
+            conn.commit()
+            return jsonify({"message": "Success"})
+        else:
+            return jsonify({"message": "Invalid Authorization"})
