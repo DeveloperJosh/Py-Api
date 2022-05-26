@@ -24,7 +24,6 @@ on_start()
 
 @app.route('/', methods=['GET'])
 def home():
-      session['secrrt']='sec'
       return render_template('index.html')
 
 @app.route(f'/api/v1', methods=['GET'])
