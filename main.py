@@ -1,6 +1,5 @@
 import flask
 from flask import redirect, request, jsonify, render_template, session, url_for
-from flask_session import Session
 from data.nsfw import nsfw_image
 import random
 import os
@@ -16,7 +15,10 @@ app.config["DEBUG"] = True
 app.config["JSON_SORT_KEYS"] = True
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "cookie"
-Session(app)
+app.config['SECRET_KEY'] = 'AJDJRJS24$($(#$$33--' #<--- SECRET_KEY must be set in config to access session
+app.config["SESSION_PERMANENT"] = False
+app.config['SESSION_TYPE'] = 'filesystem'
+session(app)
 image = []
 
 def on_start():
@@ -29,6 +31,7 @@ on_start()
 
 @app.route('/', methods=['GET'])
 def home():
+      session['secrrt']='sec'
       return render_template('index.html')
 
 @app.route(f'/api/v1', methods=['GET'])
