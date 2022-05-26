@@ -1,5 +1,5 @@
 import flask
-from flask import redirect, request, jsonify, render_template, session, url_for
+from flask import redirect, request, jsonify, render_template, url_for
 from data.nsfw import nsfw_image
 import random
 import os
@@ -12,13 +12,6 @@ cur = conn.cursor()
 
 app = flask.Flask(__name__, template_folder='html')
 app.config["DEBUG"] = True
-app.config["JSON_SORT_KEYS"] = True
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "cookie"
-app.config['SECRET_KEY'] = 'AJDJRJS24$($(#$$33--' #<--- SECRET_KEY must be set in config to access session
-app.config["SESSION_PERMANENT"] = False
-app.config['SESSION_TYPE'] = 'filesystem'
-session(app)
 image = []
 
 def on_start():
@@ -114,9 +107,6 @@ def login():
             else:
                 if password == user[1]:
                     ### add login session
-
-                    session['logged_in'] = True
-                    session['user_email'] = user[2]
                     return redirect(url_for('loggedin'))
 
                 else:
@@ -126,10 +116,7 @@ def login():
 
 @app.route(f'/loggedin', methods=['GET'])
 def loggedin():
-    if 'logged_in' in session:
-        return jsonify({"message": "Success"})
-    else:
-        return jsonify({"message": "Error"})
+    return render_template('loggedin.html')
 
 @app.route(f'/register', methods=['POST'])
 def register():
