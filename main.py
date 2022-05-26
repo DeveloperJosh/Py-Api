@@ -1,5 +1,6 @@
 import flask
-from flask import request, jsonify, render_template
+from flask import redirect, request, jsonify, render_template, session, url_for
+from flask_session import Session
 from data.nsfw import nsfw_image
 import random
 import os
@@ -13,6 +14,9 @@ cur = conn.cursor()
 app = flask.Flask(__name__, template_folder='html')
 app.config["DEBUG"] = True
 app.config["JSON_SORT_KEYS"] = True
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "cookie"
+Session(app)
 image = []
 
 def on_start():
@@ -25,7 +29,7 @@ on_start()
 
 @app.route('/', methods=['GET'])
 def home():
-      return jsonify({'message': 'Welcome to Blue\'s API'})
+      return render_template('index.html')
 
 @app.route(f'/api/v1', methods=['GET'])
 def api_v1():
@@ -106,11 +110,24 @@ def login():
                 return jsonify({"message": "User not found"})
             else:
                 if password == user[1]:
-                    return jsonify({"message": "Success"})
+                    ### add login session
+
+                    session['logged_in'] = True
+                    session['user_id'] = user[0]
+                    session['user_email'] = user[2]
+                    return redirect(url_for('loggedin'))
+
                 else:
                     return jsonify({"message": "Invalid Password"})
     if request.method == 'GET':
-        return render_template('index.html')
+        return render_template('login.html')
+
+@app.route(f'/loggedin', methods=['GET'])
+def loggedin():
+    if 'logged_in' in session:
+        return jsonify({"message": "Success"})
+    else:
+        return jsonify({"message": "Error"})
 
 @app.route(f'/register', methods=['POST'])
 def register():
@@ -128,20 +145,6 @@ def register():
             return jsonify({"message": "Success"})
         else:
             return jsonify({"message": "User already exists"})
-
-@app.route(f'/accounts', methods=['DELETE', 'GET'])
-def account():
-    if request.method == 'DELETE':
-        headers = request.headers
-        auth = headers.get("Authorization")
-        if auth == os.environ.get("DEV_AUTH"):
-            cur.execute("DELETE FROM users")
-            conn.commit()
-            return jsonify({"message": "Success"})
-        else:
-            return jsonify({"message": "Invalid Authorization"})
-    elif request.method == 'GET':
-        return jsonify({"message": "Please Wait for api to be down"})
 
 @app.route(f'/delete/user', methods=['DELETE'])
 def delete_users():
