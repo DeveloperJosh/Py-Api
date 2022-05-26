@@ -113,8 +113,7 @@ def login():
                     ### add login session
 
                     session['logged_in'] = True
-                    session['user_id'] = user[0]
-                    session['user_email'] = user[2]
+                    session['user_email'] = user[2]W
                     return redirect(url_for('loggedin'))
 
                 else:
