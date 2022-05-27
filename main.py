@@ -1,3 +1,4 @@
+from distutils.log import error
 import flask
 from flask import make_response, redirect, request, jsonify, render_template, url_for
 import os
@@ -119,3 +120,17 @@ def delete_users():
             return jsonify({"message": "Success"})
         else:
             return jsonify({"message": "Invalid Authorization"})
+
+@app.route(f'/delete/account', methods=['GET'])
+def delete_account():
+    if request.method == 'GET':
+        email = request.cookies.get("email")
+        if email is None:
+            print("No email in cookies")
+            return redirect(url_for('userpage'))
+        else:
+            cur.execute("DELETE FROM users WHERE email = %s", (email,))
+            conn.commit()
+            resp = make_response(redirect(url_for('home')))
+            resp.set_cookie('email', '', expires=0)
+            return resp

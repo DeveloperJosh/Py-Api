@@ -23,11 +23,25 @@
             var expires = "; expires=" + date.toUTCString();
             document.cookie = "email=" + email + expires + "; path=/";
             /// change button text
-            document.getElementById("keep_me_logged_in").innerHTML = "Removing Button";
-            /// wait 5 secound and remove button
+            document.getElementById("keep_me_logged_in").innerHTML = "Remembering you...";
+            // wait for 5 seconds to change button text
             setTimeout(function () {
-                document.getElementById("keep_me_logged_in").style.display = "none";
+                document.getElementById("keep_me_logged_in").innerHTML = "Remembered!";
             }, 500);
+        }
+
+        function delete_account_button() {
+            /// ask if user really want to delete account
+            /// get id
+            document.getElementById("delete_account").innerHTML;
+            var r = confirm("Are you sure you want to delete your account?");
+            if (r == true) {
+                window.location.href = "{{ url_for('delete_account') }}";
+                /// find email
+                var email = document.cookie.split("=")[1];
+                /// delete cookie
+                document.cookie = "email=" + email + "; path=/;";
+            }
         }
 
     </script>
@@ -52,21 +66,56 @@
     <br>
     <div class="container">
         <h3 class="center-text">User Page</h3>
-        <p>
-            <strong>Email:</strong>
-            <span id="email" class="text-warning"></span>
-            <script>
-                ShowEmail();
-            </script>
-        </p>
-        <p>
-            <strong>Account Type:</strong>
-            <span id="account_type" class="text-warning">Free</span>
-        </p>
-        <a>
-            <button type="button" class="btn btn-primary" onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
-            <button type="button" class="btn btn-primary" id="keep_me_logged_in" onclick="keep_me_logged_in();">Keep me logged in</button>
-        </a>
+        <div class="row">
+            <div class="col-4">
+              <div class="list-group" id="list-tab" role="tablist">
+                <a class="list-group-item list-group-item-action bg-light text-dark" id="list-profile-list" data-toggle="list" href="#list-profile" role="tab" aria-controls="profile">Profile</a>
+                <a class="list-group-item list-group-item-action bg-light text-dark" id="list-news-list" data-toggle="list" href="#list-news" role="tab" aria-controls="news">News</a>
+                <a class="list-group-item list-group-item-action bg-light text-dark" id="list-settings-list" data-toggle="list" href="#list-settings" role="tab" aria-controls="settings">Settings</a>
+              </div>
+            </div>
+            <div class="col-8">
+              <div class="tab-content" id="nav-tabContent">
+                <div class="tab-pane fade" id="list-profile" role="tabpanel" aria-labelledby="list-profile-list">
+                    <p>
+                        <strong>Email:</strong>
+                        <span id="email" class="text-warning"></span>
+                        <script>
+                            ShowEmail();
+                        </script>
+                    </p>
+                    <p>
+                        <strong>Account Type:</strong>
+                        <span id="account_type" class="text-warning">Free</span>
+                    </p>
+                </div>
+                <div class="tab-pane fade list-group" id="list-news" role="tabpanel" aria-labelledby="list-news-list">
+                    <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
+                        <div class="d-flex w-100 justify-content-between">
+                          <h5 class="mb-1">API Open</h5>
+                          <small>2022-05-26</small>
+                        </div>
+                        <p class="mb-1">Today we would like to announce that our API is open to the public, 
+                        There are 2 types of accounts Free and Paid now Paid will not be available just yet</p>
+                        <small>News from SynTech.</small>
+                      </a>
+                </div>
+                <div class="tab-pane fade" id="list-settings" role="tabpanel" aria-labelledby="list-settings-list">
+                    <p>
+                        <strong>Remember Me:</strong>
+                        <button type="button" class="btn btn-primary" id="keep_me_logged_in" onclick="keep_me_logged_in()">Remember Me</button>
+                    </p>
+                    <p>
+                        <strong>Delete Account:</strong>
+                        <button type="button" class="btn btn-danger" onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
+                    </p>
+                        <strong>Delete Account:</strong>
+                        <button type="button" class="btn btn-danger" id="delete_account" onclick="delete_account_button()">Delete Account</button>
+                    </p>
+                </div>
+              </div>
+            </div>
+          </div>
     </div>
 </body>
 </html>
