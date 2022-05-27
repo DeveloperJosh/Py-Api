@@ -1,7 +1,5 @@
 import flask
-from flask import redirect, request, jsonify, render_template, url_for
-from data.nsfw import nsfw_image
-import random
+from flask import make_response, redirect, request, jsonify, render_template, url_for
 import os
 import psycopg2
 from dotenv import load_dotenv
@@ -12,10 +10,8 @@ cur = conn.cursor()
 
 app = flask.Flask(__name__, template_folder='html')
 app.config["DEBUG"] = True
-image = []
 
 def on_start():
-    cur.execute("CREATE TABLE IF NOT EXISTS images (id serial PRIMARY KEY, image_url text, image_name text, image_nsfw boolean, image_tags text)")
     ### users table
     cur.execute("CREATE TABLE IF NOT EXISTS users (id serial PRIMARY KEY, password text, email text)")
     conn.commit()
@@ -31,50 +27,10 @@ def api_v1():
     json_data = { "message": "No Endpoins Used" }
     return jsonify(json_data)
 
-@app.route(f'/api/v1/nsfw', methods=['GET'])
-def api_v1_nsfw():
-    json_data = { "Endpoints": ["/api/v1/nsfw/<id>", "/api/v1/nsfw/random"], "message": "Success" }
-    return jsonify(json_data)
-
 @app.errorhandler(404)
 def page_not_found(e):
     error_data = { "message": "404 Page Not Found" }
     return jsonify(error_data), 404
-
-@app.route(f'/api/v1/nsfw/<int:id>', methods=['GET'])
-def api_v1_nsfw_id(id):
-     if id > 4:
-        return jsonify({"message": "Not found"})
-     else:
-        find_image = [nsfw_image[id-1]]
-        for i in find_image:
-            json_data = { "message": "Success", "url": i['url'] }
-            return jsonify(json_data)
-
-@app.route(f'/api/v1/nsfw/random', methods=['GET'])
-def api_v1_nsfw_random():
-        id = random.randint(1,4)
-        find_image = [nsfw_image[id-1]]
-        for i in find_image:
-            json_data = { "message": "Success", "id": i['id'], "url": i['url'] }
-            return jsonify(json_data)
-
-@app.route(f'/api/v1/image/', methods=['GET'])
-def api_v1_image():
-    cur.execute("SELECT * FROM images")
-    return jsonify(cur.fetchall())
-
-@app.route(f'/api/v1/image/upload', methods=['POST', 'GET'])
-def api_v1_image_post():
-    if request.method == 'POST':
-        request_data = request.get_json()
-        image_url = request_data['url']
-        number_generator = ''.join(random.choice('76378264862347632874632746') for i in range(4))
-        cur.execute("INSERT INTO images (image_url, image_name, image_nsfw, image_tags) VALUES (%s, %s, %s, %s)", (image_url, number_generator, False, ""))
-        conn.commit()
-        return jsonify({"message": "Success"})
-    elif request.method == 'GET':
-        return jsonify({"message": "Please use POST"})
 
 @app.route(f'/dev/clear', methods=['GET'])
 def dev_clear():
@@ -105,34 +61,45 @@ def login():
                 return jsonify({"message": "User not found"})
             else:
                 if password == user[1]:
-                    ### add login session
-                    return redirect(url_for('loggedin'))
+                 resp = make_response(render_template('userpage.html'))
+                 resp.set_cookie('email', email)
+                 return resp
 
                 else:
                     return jsonify({"message": "Invalid Password"})
     if request.method == 'GET':
         return render_template('login.html')
 
-@app.route(f'/loggedin', methods=['GET'])
+@app.route(f'/userpage', methods=['GET'])
 def loggedin():
-    return render_template('loggedin.html')
+    ### check if user email in cookies
+    if 'email' in flask.session:
+        return render_template('userpage.html')
+    else:
+        return redirect(url_for('login'))
 
-@app.route(f'/register', methods=['POST'])
+@app.route(f'/register', methods=['POST', 'GET'])
 def register():
     if request.method == 'POST':
         ### get from request
-        register = request.get_json()
+        register = request.form
         email = register['email']
         password = register['password']
-        ### check if user exists
-        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
-        if user is None:
-            cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, password))
-            conn.commit()
-            return jsonify({"message": "Success"})
+        if email == "":
+            return jsonify({"message": "Please enter email"})
+        elif password == "":
+            return jsonify({"message": "Please enter password"})
         else:
-            return jsonify({"message": "User already exists"})
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+            if user is None:
+                cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, password))
+                conn.commit()
+                return redirect(url_for('login'))
+            else:
+                return jsonify({"message": "User already exists"})
+    if request.method == 'GET':
+        return render_template('register.html')
 
 @app.route(f'/delete/user', methods=['DELETE'])
 def delete_users():
