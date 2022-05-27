@@ -19,6 +19,8 @@ def on_start():
 on_start()
 
 @app.route('/', methods=['GET'])
+
+@app.route('/', methods=['GET'])
 def home():
       return render_template('index.html')
 
@@ -46,37 +48,38 @@ def dev_clear():
 @app.route(f'/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
-        ### get from request
         login = request.form
         email = login['email']
         password = login['password']
-        if email == "":
-            return jsonify({"message": "Please enter email"})
-        elif password == "":
-            return jsonify({"message": "Please enter password"})
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if user is None:
+            return jsonify({"message": "User not found"})
         else:
-            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-            if user is None:
-                return jsonify({"message": "User not found"})
-            else:
-                if password == user[1]:
-                 resp = make_response(render_template('userpage.html'))
-                 resp.set_cookie('email', email)
-                 return resp
+            if password == user[1]:
+                resp = make_response(redirect(url_for('userpage')))
+                resp.set_cookie('email', email)
+                return resp
 
-                else:
-                    return jsonify({"message": "Invalid Password"})
+            else:
+                return jsonify({"message": "Invalid Password"})
+
     if request.method == 'GET':
         return render_template('login.html')
 
 @app.route(f'/userpage', methods=['GET'])
-def loggedin():
+def userpage():
     ### check if user email in cookies
-    if 'email' in flask.session:
-        return render_template('userpage.html')
-    else:
+    email = request.cookies.get('email')
+    if email is None:
         return redirect(url_for('login'))
+    else:
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if user is None:
+            return redirect(url_for('register'))
+        else:
+            return render_template('userpage.html', user=user)
 
 @app.route(f'/register', methods=['POST', 'GET'])
 def register():
@@ -85,19 +88,14 @@ def register():
         register = request.form
         email = register['email']
         password = register['password']
-        if email == "":
-            return jsonify({"message": "Please enter email"})
-        elif password == "":
-            return jsonify({"message": "Please enter password"})
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if user is None:
+            cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, password))
+            conn.commit()
+            return redirect(url_for('login'))
         else:
-            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-            if user is None:
-                cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, password))
-                conn.commit()
-                return redirect(url_for('login'))
-            else:
-                return jsonify({"message": "User already exists"})
+            return jsonify({"message": "User already exists"})
     if request.method == 'GET':
         return render_template('register.html')
 
@@ -113,3 +111,9 @@ def delete_users():
             return jsonify({"message": "Success"})
         else:
             return jsonify({"message": "Invalid Authorization"})
+
+@app.route('/delete-cookie/')
+def delete_cookie():
+    res = make_response("Cookie Removed")
+    res.set_cookie('foo', 'bar', max_age=1)
+    return res
