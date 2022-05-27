@@ -9,7 +9,9 @@ conn = psycopg2.connect(url)
 cur = conn.cursor()
 
 app = flask.Flask(__name__, template_folder='html')
+IMAGE = os.path.join('static', 'images')
 app.config["DEBUG"] = True
+app.config['UPLOAD_FOLDER'] = IMAGE
 
 def on_start():
     ### users table
@@ -19,10 +21,9 @@ def on_start():
 on_start()
 
 @app.route('/', methods=['GET'])
-
-@app.route('/', methods=['GET'])
 def home():
-      return render_template('index.html')
+      full_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'image.jpg')
+      return render_template('index.html', logo = full_filename)
 
 @app.route(f'/api/v1', methods=['GET'])
 def api_v1():
@@ -66,6 +67,13 @@ def login():
 
     if request.method == 'GET':
         return render_template('login.html')
+
+@app.route(f'/logout', methods=['GET'])
+def logout():
+    resp = make_response(redirect(url_for('home')))
+    resp.set_cookie('email', '', expires=0)
+    return resp
+
 
 @app.route(f'/userpage', methods=['GET'])
 def userpage():
@@ -111,9 +119,3 @@ def delete_users():
             return jsonify({"message": "Success"})
         else:
             return jsonify({"message": "Invalid Authorization"})
-
-@app.route('/delete-cookie/')
-def delete_cookie():
-    res = make_response("Cookie Removed")
-    res.set_cookie('foo', 'bar', max_age=1)
-    return res
