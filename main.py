@@ -1,6 +1,6 @@
 from distutils.log import error
 import flask
-from flask import make_response, redirect, request, jsonify, render_template, url_for
+from flask import make_response, redirect, request, jsonify, render_template, session, url_for
 import os
 import psycopg2
 from dotenv import load_dotenv
@@ -10,9 +10,8 @@ conn = psycopg2.connect(url)
 cur = conn.cursor()
 
 app = flask.Flask(__name__, template_folder='html')
-IMAGE = os.path.join('static', 'images')
+app.config['SECRET_KEY'] = 'UIHFIUGIEGAKRFEWUYDGYDGFIUYAEWGUYFEGWYUGAEiFUAGEUYFGIUEATGFUYEGWUYFAGYEATUYFET6T6783647823YDEFQGUYASDGUYDTQW7863875631278t67'
 app.config["DEBUG"] = True
-app.config['UPLOAD_FOLDER'] = IMAGE
 
 def on_start():
     ### users table
@@ -23,8 +22,7 @@ on_start()
 
 @app.route('/', methods=['GET'])
 def home():
-      full_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'image.jpg')
-      return render_template('index.html', logo = full_filename)
+      return render_template('index.html')
 
 @app.route(f'/api/v1', methods=['GET'])
 def api_v1():
@@ -56,13 +54,11 @@ def login():
         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
         if user is None:
-            return jsonify({"message": "User not found"})
+            return jsonify({"message": "User Not Found"}), 200
         else:
             if password == user[1]:
-                resp = make_response(redirect(url_for('userpage')))
-                resp.set_cookie('email', email)
-                return resp
-
+                session['email'] = user[0]
+                return redirect(url_for('userpage'))
             else:
                 return jsonify({"message": "Invalid Password"})
 
@@ -72,6 +68,7 @@ def login():
 @app.route(f'/logout', methods=['GET'])
 def logout():
     resp = make_response(redirect(url_for('home')))
+    session.pop('email', None)
     resp.set_cookie('email', '', expires=0)
     return resp
 
@@ -79,16 +76,13 @@ def logout():
 @app.route(f'/userpage', methods=['GET'])
 def userpage():
     ### check if user email in cookies
-    email = request.cookies.get('email')
-    if email is None:
-        return redirect(url_for('login'))
-    else:
+    if 'email' in session:
+        email = session['email']
         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
-        if user is None:
-            return redirect(url_for('register'))
-        else:
-            return render_template('userpage.html', user=user)
+        return render_template('userpage.html', user = user)
+    else:
+        return redirect(url_for('login'))
 
 @app.route(f'/register', methods=['POST', 'GET'])
 def register():

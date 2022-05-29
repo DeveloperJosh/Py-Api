@@ -9,6 +9,7 @@ gunicorn = "*"
 psycopg2-binary = "*"
 python-dotenv = "*"
 flask-session = "*"
+flask-mail = "*"
 
 [dev-packages]
 
