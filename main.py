@@ -1,6 +1,6 @@
 from distutils.log import error
 import flask
-from flask import make_response, redirect, request, jsonify, render_template, session, url_for
+from flask import make_response, redirect, request, jsonify, render_template, url_for
 import os
 import psycopg2
 from dotenv import load_dotenv
@@ -57,8 +57,9 @@ def login():
             return jsonify({"message": "User Not Found"}), 200
         else:
             if password == user[1]:
-                session['email'] = user[0]
-                return redirect(url_for('userpage'))
+                resp = make_response(redirect(url_for('userpage')))
+                resp.set_cookie('email', email)
+                return resp
             else:
                 return jsonify({"message": "Invalid Password"})
 
@@ -68,26 +69,23 @@ def login():
 @app.route(f'/logout', methods=['GET'])
 def logout():
     resp = make_response(redirect(url_for('home')))
-    session.pop('email', None)
     resp.set_cookie('email', '', expires=0)
     return resp
 
 
+
 @app.route(f'/userpage', methods=['GET'])
 def userpage():
-    ### check if user email in cookies
-    ## check if user email in is database
-    ## if not, redirect to login
-    ## if yes, render userpage
-    if 'email' in session:
-        email = session['email']
-        ### int to str
-        email = str(email)
+    email = request.cookies.get('email')
+    if email is None:
+        return redirect(url_for('login'))
+    else:
         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
-        return render_template('userpage.html', user=user)
-    else:
-        return redirect(url_for('login'))
+        if user is None:
+            return redirect(url_for('register'))
+        else:
+            return render_template('userpage.html', user=user) 
 
 @app.route(f'/register', methods=['POST', 'GET'])
 def register():
@@ -123,13 +121,19 @@ def delete_users():
 @app.route(f'/delete/account', methods=['GET'])
 def delete_account():
     if request.method == 'GET':
-        email = request.cookies.get("email")
+        email = request.cookies.get('email')
+        ### int to str
+        email = str(email)
         if email is None:
             print("No email in cookies")
             return redirect(url_for('userpage'))
         else:
-            cur.execute("DELETE FROM users WHERE email = %s", (email,))
-            conn.commit()
-            resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('email', '', expires=0)
-            return resp
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+            if user is None:
+                print("No user found")
+                return redirect(url_for('userpage'))
+            else:
+                cur.execute("DELETE FROM users WHERE email = %s", (email,))
+                conn.commit()
+                return redirect(url_for('home'))
