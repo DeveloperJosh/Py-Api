@@ -76,11 +76,16 @@ def logout():
 @app.route(f'/userpage', methods=['GET'])
 def userpage():
     ### check if user email in cookies
+    ## check if user email in is database
+    ## if not, redirect to login
+    ## if yes, render userpage
     if 'email' in session:
         email = session['email']
+        ### int to str
+        email = str(email)
         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
-        return render_template('userpage.html', user = user)
+        return render_template('userpage.html', user=user)
     else:
         return redirect(url_for('login'))
 
